@@ -2,110 +2,170 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Estrutura que representa uma sala da mansão
+// -----------------------------
+// ESTRUTURA DA MANSÃO (ÁRVORE BINÁRIA)
+// -----------------------------
 typedef struct sala {
     char nome[50];
+    char pista[100];    // pista opcional associada ao cômodo
     struct sala *esquerda;
     struct sala *direita;
 } Sala;
 
-// Função que cria uma sala dinamicamente
-Sala* criarSala(const char *nome) {
+// -----------------------------
+// ESTRUTURA DA ÁRVORE DE PISTAS (BST)
+// -----------------------------
+typedef struct pistaNode {
+    char pista[100];
+    struct pistaNode *esq;
+    struct pistaNode *dir;
+} PistaNode;
+
+// -----------------------------------------------------------
+// Função: criarSala()
+// Cria dinamicamente um cômodo com seu nome e pista opcional
+// -----------------------------------------------------------
+Sala* criarSala(const char *nome, const char *pista) {
     Sala *nova = (Sala*) malloc(sizeof(Sala));
     if (nova == NULL) {
-        printf("Erro ao alocar memoria para a sala.\n");
+        printf("Erro ao alocar memoria para sala!\n");
         exit(1);
     }
     strcpy(nova->nome, nome);
+    strcpy(nova->pista, pista);
     nova->esquerda = NULL;
     nova->direita = NULL;
     return nova;
 }
 
-// Função que permite o jogador explorar a mansão
-void explorarSalas(Sala *atual) {
-    char escolha;
+// -----------------------------------------------------------
+// Função: inserirPista()
+// Insere uma pista na BST mantendo a ordem alfabética
+// -----------------------------------------------------------
+PistaNode* inserirPista(PistaNode *raiz, const char *pista) {
+    if (raiz == NULL) {
+        PistaNode *novo = (PistaNode*) malloc(sizeof(PistaNode));
+        strcpy(novo->pista, pista);
+        novo->esq = NULL;
+        novo->dir = NULL;
+        return novo;
+    }
 
-    // Enquanto existir uma sala para explorar
-    while (atual != NULL) {
-        printf("\n=====================================\n");
+    if (strcmp(pista, raiz->pista) < 0)
+        raiz->esq = inserirPista(raiz->esq, pista);
+    else
+        raiz->dir = inserirPista(raiz->dir, pista);
+
+    return raiz;
+}
+
+// -----------------------------------------------------------
+// Função: exibirPistas()
+// Mostra todas as pistas em ordem alfabética (in-order)
+// -----------------------------------------------------------
+void exibirPistas(PistaNode *raiz) {
+    if (raiz != NULL) {
+        exibirPistas(raiz->esq);
+        printf(" - %s\n", raiz->pista);
+        exibirPistas(raiz->dir);
+    }
+}
+
+// -----------------------------------------------------------
+// Função: explorarSalasComPistas()
+// Permite navegar pela mansão e coleta pistas automaticamente
+// -----------------------------------------------------------
+void explorarSalasComPistas(Sala *atual, PistaNode **arvorePistas) {
+    char opcao;
+
+    while (1) {
+        printf("\n====================================\n");
         printf("Voce esta na: %s\n", atual->nome);
-        printf("=====================================\n");
+        printf("====================================\n");
 
-        // Caso a sala não tenha caminhos, o jogo termina
-        if (atual->esquerda == NULL && atual->direita == NULL) {
-            printf("Fim do caminho! Voce chegou ao fim da exploracao.\n");
-            break;
+        // Se o cômodo tiver pista, coletar automaticamente
+        if (strlen(atual->pista) > 0) {
+            printf("Pista encontrada: \"%s\"\n", atual->pista);
+            *arvorePistas = inserirPista(*arvorePistas, atual->pista);
         }
 
-        // Mostra opções ao jogador
-        printf("Escolha um caminho:\n");
+        // Exibir caminhos
+        printf("\nEscolha seu caminho:\n");
         if (atual->esquerda != NULL)
-            printf("  (e) Ir para a esquerda -> %s\n", atual->esquerda->nome);
+            printf("  (e) Esquerda -> %s\n", atual->esquerda->nome);
         if (atual->direita != NULL)
-            printf("  (d) Ir para a direita  -> %s\n", atual->direita->nome);
+            printf("  (d) Direita  -> %s\n", atual->direita->nome);
+
         printf("  (s) Sair da exploracao\n");
         printf("Opcao: ");
-        scanf(" %c", &escolha);
+        scanf(" %c", &opcao);
 
-        // Limpa o buffer
+        // Limpar buffer
         while (getchar() != '\n');
 
-        // Executa a escolha
-        if (escolha == 'e' && atual->esquerda != NULL)
+        if (opcao == 'e' && atual->esquerda != NULL) {
             atual = atual->esquerda;
-        else if (escolha == 'd' && atual->direita != NULL)
+        }
+        else if (opcao == 'd' && atual->direita != NULL) {
             atual = atual->direita;
-        else if (escolha == 's') {
-            printf("\nVoce decidiu encerrar a exploracao.\n");
-            break;
-        } else {
-            printf("\nCaminho invalido! Tente novamente.\n");
+        }
+        else if (opcao == 's') {
+            printf("\nExploracao encerrada.\n");
+            return;
+        }
+        else {
+            printf("Opcao invalida! Tente novamente.\n");
         }
     }
 }
 
-// Função principal que monta o mapa da mansão e inicia o jogo
+// -----------------------------------------------------------
+// Função principal
+// -----------------------------------------------------------
 int main() {
-    // Criação manual da estrutura da mansão (árvore binária)
-    Sala *hall = criarSala("Hall de Entrada");
-    Sala *salaEstar = criarSala("Sala de Estar");
-    Sala *cozinha = criarSala("Cozinha");
-    Sala *biblioteca = criarSala("Biblioteca");
-    Sala *jardim = criarSala("Jardim");
-    Sala *porao = criarSala("Porao Misterioso");
-    Sala *sotao = criarSala("Sotao Assombrado");
+    // Construção da mansão (manual e fixa)
+    Sala *hall       = criarSala("Hall de Entrada", "Pegada suspeita na poeira");
+    Sala *estar      = criarSala("Sala de Estar", "Objeto caido atras do sofa");
+    Sala *cozinha    = criarSala("Cozinha", "Faca fora do lugar");
+    Sala *jardim     = criarSala("Jardim", "");
+    Sala *biblioteca = criarSala("Biblioteca", "Pagina arrancada de um livro");
+    Sala *porao      = criarSala("Porao", "Ruido estranho vindo das caixas");
+    Sala *sotao      = criarSala("Sotao", "");
 
-    // Conexões (montagem da árvore)
-    hall->esquerda = salaEstar;
-    hall->direita = cozinha;
+    // Ligações da árvore da mansão
+    hall->esquerda = estar;
+    hall->direita  = cozinha;
 
-    salaEstar->esquerda = biblioteca;
-    salaEstar->direita = jardim;
+    estar->esquerda = biblioteca;
+    estar->direita  = jardim;
 
     cozinha->esquerda = porao;
-    cozinha->direita = sotao;
+    cozinha->direita  = sotao;
 
-    // Introdução
+    // Árvore de pistas coletadas começa vazia
+    PistaNode *pistas = NULL;
+
+    // Apresentação
     printf("=====================================\n");
-    printf("  DETECTIVE QUEST - DESAFIO NOVATO\n");
+    printf("   DETECTIVE QUEST - NIVEL INTERMEDIARIO\n");
     printf("=====================================\n");
-    printf("Bem-vindo(a) à mansão! Sua missão é explorar os cômodos.\n");
-    printf("Escolha entre os caminhos à esquerda (e) ou direita (d).\n");
-    printf("Boa sorte, detetive!\n");
+    printf("Explore a mansao e colete pistas!\n");
 
-    // Inicia a exploração
-    explorarSalas(hall);
+    // Exploração interativa
+    explorarSalasComPistas(hall, &pistas);
 
-    // Liberação de memória (boa prática)
-    free(hall);
-    free(salaEstar);
-    free(cozinha);
-    free(biblioteca);
-    free(jardim);
-    free(porao);
-    free(sotao);
+    // Exibição final das pistas coletadas
+    printf("\n\n=====================================\n");
+    printf("Pistas coletadas durante a exploracao:\n");
+    printf("=====================================\n");
 
-    printf("\nJogo encerrado. Ate a proxima investigacao!\n");
+    if (pistas == NULL) {
+        printf("Nenhuma pista encontrada.\n");
+    } else {
+        exibirPistas(pistas);
+    }
+
+    printf("\nObrigado por jogar Detective Quest!\n");
+
     return 0;
 }
